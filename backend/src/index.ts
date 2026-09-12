@@ -30,8 +30,11 @@ app.set('trust proxy', 1);
 
 export function isAllowedOrigin(origin?: string): boolean {
   if (!origin) return true;
-  if (origin === env.CORS_ORIGIN) return true;
-  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  const cleanOrigin = origin.replace(/\/+$/, '');
+  const cleanConfigured = (env.CORS_ORIGIN || '').replace(/\/+$/, '');
+  if (cleanOrigin === cleanConfigured) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) return true;
+  // Allow preview deployments or exact domain matches if configured
   return false;
 }
 

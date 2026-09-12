@@ -18,8 +18,9 @@ export function initSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        // Allow all local development origins (5173, 5174, etc.) and configured CORS_ORIGIN
-        if (!origin || origin === env.CORS_ORIGIN || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        const cleanOrigin = origin ? origin.replace(/\/+$/, '') : '';
+        const cleanConfigured = (env.CORS_ORIGIN || '').replace(/\/+$/, '');
+        if (!origin || cleanOrigin === cleanConfigured || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) {
           callback(null, true);
         } else {
           callback(null, true); // Gracefully fallback
