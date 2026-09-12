@@ -59,6 +59,14 @@ app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders
 app.use(cookieParser(env.COOKIE_SECRET));
 app.use(express.json());
 
+// Normalize double or multiple slashes in request URLs (e.g. //api/auth/login -> /api/auth/login)
+app.use((req, _res, next) => {
+  if (req.url.startsWith('//')) {
+    req.url = req.url.replace(/^\/+/, '/');
+  }
+  next();
+});
+
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
