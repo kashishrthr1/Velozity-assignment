@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PROJECT_MANAGER
+  DEVELOPER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  role          Role
+  isOnline      Boolean  @default(false)
+  lastSeen      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  createdProjects   Project[]      @relation("ProjectCreator")
+  assignedTasks     Task[]         @relation("TaskAssignee")
+  createdTasks      Task[]         @relation("TaskCreator")
+  taskLogs          TaskLog[]
+  activityFeed      ActivityFeed[]
+  notifications     Notification[]
+  refreshTokens     RefreshToken[]
+
+  @@index([role])
+  @@index([isOnline])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  company   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  clientId    String
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  client      Client         @relation(fields: [clientId], references: [id])
+  createdBy   User           @relation("ProjectCreator", fields: [createdById], references: [id])
+  tasks       Task[]
+  activityFeed ActivityFeed[]
+
+  @@index([clientId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model Task {
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  status       TaskStatus   @default(TODO)
+  priority     TaskPriority @default(MEDIUM)
+  dueDate      DateTime
+  isOverdue    Boolean      @default(false)
+  projectId    String
+  assignedToId String?
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relations
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedTo   User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  createdBy    User           @relation("TaskCreator", fields: [createdById], references: [id])
+  taskLogs     TaskLog[]
+  activityFeed ActivityFeed[]
+  notifications Notification[]
+
+  @@index([projectId])
+  @@index([assignedToId])
+  @@index([dueDate])
+  @@index([isOverdue])
+  @@index([status])
+  @@index([priority])
+}
+
+model TaskLog {
+  id         String     @id @default(cuid())
+  taskId     String
+  changedById String
+  oldStatus  TaskStatus?
+  newStatus  TaskStatus
+  note       String?
+  createdAt  DateTime   @default(now())
+
+  task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedBy  User @relation(fields: [changedById], references: [id])
+
+  @@index([taskId])
+  @@index([createdAt])
+}
+
+model ActivityFeed {
+  id         String   @id @default(cuid())
+  projectId  String?
+  userId     String
+  taskId     String?
+  actionType String
+  message    String
+  createdAt  DateTime @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id])
+  task    Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  taskId    String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+}
