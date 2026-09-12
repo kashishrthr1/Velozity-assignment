@@ -3,7 +3,8 @@ import { io, Socket } from 'socket.io-client';
 import { getAccessToken } from '../api/client';
 import { useAuth } from './AuthContext';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+const rawWsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+const WS_URL = rawWsUrl.replace(/\/+$/, '');
 
 interface SocketContextType {
   socket: Socket | null;

@@ -1,7 +1,8 @@
 import { apiClient, setAccessToken } from './client';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '');
 
 export async function login(email: string, password: string) {
   const res = await apiClient.post('/auth/login', { email, password });
